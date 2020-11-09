@@ -62,8 +62,7 @@ public class UrlShortenerController {
   private boolean urlAccessible(String url) {
     try {
       URL urlForGet = new URL(url);
-      String readLine = null;
-      HttpURLConnection connection = null;
+      HttpURLConnection connection;
       connection = (HttpURLConnection) urlForGet.openConnection();
       connection.setRequestMethod("GET");
       int responseCode = connection.getResponseCode();
@@ -85,7 +84,7 @@ public class UrlShortenerController {
   //Return a Map with all the info in the header of the request
   private Map<String, String> getHeadersInfo(HttpServletRequest request) {
 
-    Map<String, String> map = new HashMap<String, String>();
+    Map<String, String> map = new HashMap<>();
 
     Enumeration headerNames = request.getHeaderNames();
     while (headerNames.hasMoreElements()) {
