@@ -52,6 +52,8 @@ public class UrlShortenerController {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
+      Map<String,String> headersInfo = getHeadersInfo(request);
+      su.setRequestInfo(headersInfo.get("user-agent"));
       return new ResponseEntity<>(su, h, HttpStatus.CREATED);
     } else {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

@@ -16,6 +16,10 @@ public class ShortURL {
   private String ip;
   private String country;
 
+
+
+  private String requestInfo;
+
   public ShortURL(String hash, String target, URI uri, String sponsor,
                   Date created, String owner, Integer mode, Boolean safe, String ip,
                   String country) {
@@ -113,4 +117,8 @@ public class ShortURL {
   public void setCountry(String country) {
     this.country = country;
   }
+
+  public String getRequestInfo() { return requestInfo; }
+
+  public void setRequestInfo(String requestInfo) { this.requestInfo = requestInfo; }
 }

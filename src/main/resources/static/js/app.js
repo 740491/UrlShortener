@@ -13,7 +13,9 @@ $(document).ready(
                             + msg.uri
                             + "'>"
                             + msg.uri
-                            + "</a></div>");
+                            + "</a></div>"
+                            + "</br>"
+                            + msg.requestInfo);
                     },
                     error: function () {
                         $("#result").html(
