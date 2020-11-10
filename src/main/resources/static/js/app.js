@@ -8,15 +8,27 @@ $(document).ready(
                     url: "/link",
                     data: $(this).serialize(),
                     success: function (msg) {
-                        $("#result").html(
-                            "<div class='alert alert-success lead'><a target='_blank' href='"
-                            + msg.uri
-                            + "'>"
-                            + msg.uri
-                            + "</a></div>"
-                            + "</br>"
-                            + msg.requestInfo
-                    );
+                        if (msg.safe) {
+                            $("#result").html(
+                                "<div class='alert alert-success lead'><a target='_blank' href='"
+                                + msg.uri
+                                + "'>"
+                                + msg.uri
+                                + "</a></div>"
+                                + "</br>"
+                                + msg.requestInfo
+                                + "<div class='alert alert-success lead'>La URL parece segura</div>");
+                        } else {
+                            $("#result").html(
+                                "<div class='alert alert-success lead'><a target='_blank' href='"
+                                + msg.uri
+                                + "'>"
+                                + msg.uri
+                                + "</a></div>"
+                                + "</br>"
+                                + msg.requestInfo
+                                + "<div class='alert alert-danger lead' >¡¡¡ LA URL NO ES SEGURA !!!</div>");
+                        }
                         // Generate the link that would be
                         // used to generate the QR Code
                         // with the given data
@@ -26,6 +38,7 @@ $(document).ready(
                         // Replace the src of the image with
                         // the QR code image
                         $('.qr-code').attr('src', finalURL);
+
                     },
                     error: function () {
                         $("#result").html(
