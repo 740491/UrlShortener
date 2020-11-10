@@ -103,7 +103,7 @@ public class UrlShortenerTests {
 
   @Test
   public void thatShortenerFailsIfTheRepositoryReturnsNull() throws Exception {
-    when(shortUrlService.save(any(String.class), any(String.class), any(String.class)))
+    when(shortUrlService.save(any(String.class), any(String.class), any(String.class), any(Boolean.class)))
         .thenReturn(null);
 
     mockMvc.perform(post("/link").param("url", "someKey")).andDo(print())
@@ -111,7 +111,7 @@ public class UrlShortenerTests {
   }
 
   private void configureSave(String sponsor) {
-    when(shortUrlService.save(any(), any(), any()))
+    when(shortUrlService.save(any(), any(), any(), any(Boolean.class)))
         .then((Answer<ShortURL>) invocation -> new ShortURL(
             "f684a3c4",
             "http://example.com/",
