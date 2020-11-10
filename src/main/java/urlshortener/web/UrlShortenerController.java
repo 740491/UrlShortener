@@ -26,7 +26,7 @@ import java.util.*;
 @RestController
 public class UrlShortenerController {
   public static final JacksonFactory GOOGLE_JSON_FACTORY = JacksonFactory.getDefaultInstance();
-  public static final String GOOGLE_API_KEY = ""; // Google API key
+  public static final String GOOGLE_API_KEY = "AIzaSyBsK1WLBmoX-6AMs0-ady2UlkSiPFFv0zo"; // Google API key
   public static final String GOOGLE_CLIENT_ID = "UrlShortener-group-E"; // client id
   public static final String GOOGLE_CLIENT_VERSION = "0.0.1"; // client version
   public static final String GOOGLE_APPLICATION_NAME = "APP-UrlShortener-group-E"; // appication name
@@ -63,8 +63,8 @@ public class UrlShortenerController {
                                             HttpServletRequest request) {
     UrlValidator urlValidator = new UrlValidator(new String[] {"http",
         "https"});
-    if (urlValidator.isValid(url) && urlAccessible(url) && checkThreat(url)) {
-      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
+    if (urlValidator.isValid(url) && urlAccessible(url)) {
+      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), checkThreat(url));
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
       Map<String,String> headersInfo = getHeadersInfo(request);
@@ -126,14 +126,14 @@ public class UrlShortenerController {
 
       List<ThreatMatch> threatMatches = findThreatMatchesResponse.getMatches();
 
-      //The url is not secure
+      //The url is not safe
       if (threatMatches != null && threatMatches.size() > 0) {
         for (ThreatMatch threatMatch : threatMatches) {
           System.out.println(threatMatch.toPrettyString());
         }
         System.out.println("URL NOT SECURE");
         return false;
-      } else{ //The url is secure
+      } else{ //The url is safe
         System.out.println("URL SECURE");
         return true;
       }

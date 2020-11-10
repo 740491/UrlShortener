@@ -22,7 +22,7 @@ public class ShortURLService {
     return shortURLRepository.findByKey(id);
   }
 
-  public ShortURL save(String url, String sponsor, String ip) {
+  public ShortURL save(String url, String sponsor, String ip, boolean safe) {
     ShortURL su = ShortURLBuilder.newInstance()
         .target(url)
         .uri((String hash) -> linkTo(methodOn(UrlShortenerController.class).redirectTo(hash, null))
@@ -31,10 +31,10 @@ public class ShortURLService {
         .createdNow()
         .randomOwner()
         .temporaryRedirect()
-        .treatAsSafe()
         .ip(ip)
         .unknownCountry()
         .build();
+    su.setSafe(safe);
     return shortURLRepository.save(su);
   }
 }
