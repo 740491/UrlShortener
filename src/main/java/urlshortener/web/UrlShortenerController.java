@@ -1,10 +1,14 @@
 package urlshortener.web;
 
+import com.google.zxing.WriterException;
 import org.apache.commons.validator.routines.UrlValidator;
+import org.apache.xalan.lib.sql.ObjectArray;
+import org.graalvm.compiler.word.ObjectAccess;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import urlshortener.domain.Qr;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.ClickService;
 import urlshortener.service.ShortURLService;
@@ -41,15 +45,37 @@ public class UrlShortenerController {
     }
   }
 
+//  @RequestMapping(value = "/link", method = RequestMethod.POST)
+//  public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
+//                                            @RequestParam(value = "sponsor", required = false)
+//                                                String sponsor,
+//                                            HttpServletRequest request) {
+//    UrlValidator urlValidator = new UrlValidator(new String[] {"http",
+//        "https"});
+//    if (urlValidator.isValid(url) && urlAccessible(url)) {
+//      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
+//      HttpHeaders h = new HttpHeaders();
+//      h.setLocation(su.getUri());
+//      Map<String,String> headersInfo = getHeadersInfo(request);
+//      su.setRequestInfo(headersInfo.get("user-agent"));
+//      return new ResponseEntity<>(su, h, HttpStatus.CREATED);
+//    } else {
+//      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+//    }
+//  }
+
   @RequestMapping(value = "/link", method = RequestMethod.POST)
   public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
-                                            @RequestParam(value = "sponsor", required = false)
-                                                String sponsor,
-                                            HttpServletRequest request) {
+                                               @RequestParam(value = "sponsor", required = false)
+                                                    String sponsor,
+                                               HttpServletRequest request) throws IOException, WriterException {
     UrlValidator urlValidator = new UrlValidator(new String[] {"http",
-        "https"});
+            "https"});
     if (urlValidator.isValid(url) && urlAccessible(url)) {
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
+      // waiting to know how to return both shorturl and object byte[] to later display it
+      //Qr qrResponse = new Qr();
+      //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
       HttpHeaders h = new HttpHeaders();
       h.setLocation(su.getUri());
       Map<String,String> headersInfo = getHeadersInfo(request);
