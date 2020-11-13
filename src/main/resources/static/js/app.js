@@ -1,6 +1,7 @@
 $(document).ready(
     function () {
         $("#shortener").submit(
+
             function (event) {
                 event.preventDefault();
                 $.ajax({
@@ -45,5 +46,37 @@ $(document).ready(
                             "<div class='alert alert-danger lead'>ERROR</div>");
                     }
                 });
+            });
+
+        $("#csvFile").submit(
+
+            function (event) {
+                event.preventDefault();
+                $.ajax({
+                        url: "/csvFile",
+                        type: "POST",
+                        data: new FormData(this),
+                        enctype: 'multipart/form-data',
+                        processData: false,
+                        contentType: false,
+                        cache: false,
+                        success: function (res) {
+                            console.info(res);
+                            var blob = new Blob([res], { type: 'application/csv' });
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.style.display = 'none';
+                            a.href = url;
+                            // the filename you want
+                            a.download = 'shortenedURLs.csv';
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                        },
+                        error: function (err) {
+                            $("#result").html(
+                            "<div class='alert alert-danger lead'>ERROR</div>");
+                        }
+                    });
             });
     });
