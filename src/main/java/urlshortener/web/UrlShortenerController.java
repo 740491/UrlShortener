@@ -1,16 +1,16 @@
 package urlshortener.web;
 
 
-import com.google.zxing.WriterException;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
-import org.apache.commons.validator.routines.UrlValidator;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.safebrowsing.Safebrowsing;
 import com.google.api.services.safebrowsing.model.*;
-import org.apache.logging.log4j.LogManager;
+import com.google.zxing.WriterException;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import org.apache.commons.validator.routines.UrlValidator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import urlshortener.domain.ShortURL;
+import urlshortener.service.AccessibleURLService;
 import urlshortener.service.ClickService;
 import urlshortener.service.ShortURLService;
 
@@ -27,9 +28,9 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.util.*;
+import java.util.concurrent.Executor;
 
 @RestController
 public class UrlShortenerController {
@@ -47,6 +48,8 @@ public class UrlShortenerController {
 
   private final ClickService clickService;
 
+  @Autowired
+  AccessibleURLService accessibleURLService;
 
   public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService) {
     this.shortUrlService = shortUrlService;
@@ -65,47 +68,24 @@ public class UrlShortenerController {
     }
   }
 
-//  @RequestMapping(value = "/link", method = RequestMethod.POST)
-//  public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
-//                                            @RequestParam(value = "sponsor", required = false)
-//                                                String sponsor,
-//                                            HttpServletRequest request) {
-//    UrlValidator urlValidator = new UrlValidator(new String[] {"http",
-//        "https"});
-//    if (urlValidator.isValid(url) && urlAccessible(url)) {
-//      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr());
-//      HttpHeaders h = new HttpHeaders();
-//      h.setLocation(su.getUri());
-//      Map<String,String> headersInfo = getHeadersInfo(request);
-//      su.setRequestInfo(headersInfo.get("user-agent"));
-//      return new ResponseEntity<>(su, h, HttpStatus.CREATED);
-//    } else {
-//      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-//    }
-//  }
-
   @RequestMapping(value = "/link", method = RequestMethod.POST)
   public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
                                                @RequestParam(value = "sponsor", required = false)
                                                     String sponsor,
                                                HttpServletRequest request) throws IOException, WriterException {
-    UrlValidator urlValidator = new UrlValidator(new String[] {"http",
-            "https"});
-    if (urlValidator.isValid(url) && urlAccessible(url)) {
+    accessibleURLService.accessible("kk");
+    System.out.println("proceso principal");
+    UrlValidator urlValidator = new UrlValidator(new String[] {"http", "https"});
+    // waiting to know how to return both shorturl and object byte[] to later display it
+    //Qr qrResponse = new Qr();
+    //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
+    ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), checkThreat(url));
+    HttpHeaders h = new HttpHeaders();
 
-      // waiting to know how to return both shorturl and object byte[] to later display it
-      //Qr qrResponse = new Qr();
-      //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
-      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), checkThreat(url));
-      HttpHeaders h = new HttpHeaders();
-
-      h.setLocation(su.getUri());
-      Map<String,String> headersInfo = getHeadersInfo(request);
-      su.setRequestInfo(headersInfo.get("user-agent"));
-      return new ResponseEntity<>(su, h, HttpStatus.CREATED);
-    } else {
-      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-    }
+    h.setLocation(su.getUri());
+    Map<String,String> headersInfo = getHeadersInfo(request);
+    su.setRequestInfo(headersInfo.get("user-agent"));
+    return new ResponseEntity<>(su, h, HttpStatus.CREATED);
   }
 
 
@@ -173,7 +153,11 @@ public class UrlShortenerController {
       }
   }
 
-  //Returns true if the url request gives code 200 in the header, otherwise returns false
+  /**
+   *
+   * @param url String with the url to check if its accessible
+   * @return true if the url request gives code 200 in the header, otherwise returns false
+   */
   private boolean urlAccessible(String url) {
     try {
       URL urlForGet = new URL(url);
@@ -211,6 +195,11 @@ public class UrlShortenerController {
     return map;
   }
 
+  /**
+   * Check if 'url' is marked as a potencial threat
+   * @param url is a string with the URL to check
+   * @return true if and only if url is not registered as a threat
+   */
   private static boolean checkThreat(String url) {
     try {
       httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -241,6 +230,7 @@ public class UrlShortenerController {
     }
   }
 
+  //Send a request to Google Safe Browsing to check if 'urls' are threats
   private static FindThreatMatchesRequest createFindThreatMatchesRequest(List<String> urls) {
     FindThreatMatchesRequest findThreatMatchesRequest = new FindThreatMatchesRequest();
 

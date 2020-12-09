@@ -15,6 +15,7 @@ public class ShortURL {
   private Boolean safe;
   private String ip;
   private String country;
+  private Boolean accessible;
 
 
 
@@ -22,7 +23,7 @@ public class ShortURL {
 
   public ShortURL(String hash, String target, URI uri, String sponsor,
                   Date created, String owner, Integer mode, Boolean safe, String ip,
-                  String country) {
+                  String country, Boolean accessible) {
     this.hash = hash;
     this.target = target;
     this.uri = uri;
@@ -33,6 +34,7 @@ public class ShortURL {
     this.safe = safe;
     this.ip = ip;
     this.country = country;
+    this.accessible = accessible;
   }
 
   public ShortURL() {
@@ -121,4 +123,8 @@ public class ShortURL {
   public String getRequestInfo() { return requestInfo; }
 
   public void setRequestInfo(String requestInfo) { this.requestInfo = requestInfo; }
+
+  public Boolean getAccessible() { return accessible; }
+
+  public void setAccessible(Boolean accessible) { this.accessible = accessible; }
 }

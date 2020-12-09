@@ -22,7 +22,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
           null, rs.getString("sponsor"), rs.getDate("created"),
           rs.getString("owner"), rs.getInt("mode"),
           rs.getBoolean("safe"), rs.getString("ip"),
-          rs.getString("country"));
+          rs.getString("country"), rs.getBoolean("accessible"));
 
   private final JdbcTemplate jdbc;
 
@@ -47,7 +47,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
       jdbc.update("INSERT INTO shorturl VALUES (?,?,?,?,?,?,?,?,?)",
           su.getHash(), su.getTarget(), su.getSponsor(),
           su.getCreated(), su.getOwner(), su.getMode(), su.getSafe(),
-          su.getIP(), su.getCountry());
+          su.getIP(), su.getCountry(), su.getAccessible());
     } catch (DuplicateKeyException e) {
       log.debug("When insert for key {}", su.getHash(), e);
       return su;
@@ -66,7 +66,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
       return new ShortURL(
         su.getHash(), su.getTarget(), su.getUri(), su.getSponsor(),
         su.getCreated(), su.getOwner(), su.getMode(), safeness,
-        su.getIP(), su.getCountry()
+        su.getIP(), su.getCountry(), su.getAccessible()
       );
     } catch (Exception e) {
       log.debug("When update", e);
