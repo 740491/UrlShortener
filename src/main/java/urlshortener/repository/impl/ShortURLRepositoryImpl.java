@@ -52,7 +52,6 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
       log.debug("When insert for key {}", su.getHash(), e);
       return su;
     } catch (Exception e) {
-      System.out.println("abort!! save " + e);
       log.debug("When insert", e);
       return null;
     }
@@ -128,6 +127,16 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
     } catch (Exception e) {
       log.debug("When select for target " + target, e);
       return Collections.emptyList();
+    }
+  }
+
+  @Override
+  public void updateAccessible(String hash, boolean accessible) {
+    try {
+      jdbc.update("UPDATE shorturl SET accessible=? WHERE hash=?", accessible, hash);
+    } catch (Exception e) {
+      System.out.println("updateAccessible " + e);
+      log.debug("When update", e);
     }
   }
 }

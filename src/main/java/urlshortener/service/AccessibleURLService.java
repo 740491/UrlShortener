@@ -1,28 +1,58 @@
 package urlshortener.service;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import urlshortener.domain.ShortURL;
+import urlshortener.repository.ShortURLRepository;
 
-import java.util.concurrent.Executor;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 @Service
 @Configuration
 @EnableAsync
 public class AccessibleURLService {
 
-    public AccessibleURLService() {}
+    private final ShortURLRepository shortURLRepository;
+
+    public AccessibleURLService(ShortURLRepository shortURLRepository) {
+        this.shortURLRepository = shortURLRepository;
+    }
 
     @Async
-    public void accessible(String url) {
+    public void accessible(String hash, String target) {
+        Boolean accessible = urlAccessible(target);
+        shortURLRepository.updateAccessible(hash, accessible);
+        System.out.println("Accessibility object: " + shortURLRepository.findByKey(hash).getAccessible());
+    }
+
+    /**
+     *
+     * @param url String with the url to check if its accessible
+     * @return true if the url request gives code 200 in the header, otherwise returns false
+     */
+    private boolean urlAccessible(String url) {
         try {
-            Thread.sleep(5000);
-            System.out.println("dentro del asincrono: " + url);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            URL urlForGet = new URL(url);
+            HttpURLConnection connection;
+            connection = (HttpURLConnection) urlForGet.openConnection();
+            connection.setRequestMethod("GET");
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                System.out.println(url + " CODE 200");
+                return true;
+            } else {
+                System.out.print("Error Code:");
+                System.out.println(connection.getResponseCode());
+                return false;
+            }
+        } catch (IOException e) {
+            System.out.println("URL not accesible");
+            return false;
         }
     }
 }

@@ -73,13 +73,14 @@ public class UrlShortenerController {
                                                @RequestParam(value = "sponsor", required = false)
                                                     String sponsor,
                                                HttpServletRequest request) throws IOException, WriterException {
-    accessibleURLService.accessible("kk");
-    System.out.println("proceso principal");
-    UrlValidator urlValidator = new UrlValidator(new String[] {"http", "https"});
+
     // waiting to know how to return both shorturl and object byte[] to later display it
     //Qr qrResponse = new Qr();
     //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
     ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), checkThreat(url));
+
+    accessibleURLService.accessible(su.getHash(),su.getTarget());
+
     HttpHeaders h = new HttpHeaders();
 
     h.setLocation(su.getUri());
@@ -119,7 +120,7 @@ public class UrlShortenerController {
         shortened.add(l.get(0));
         for(int i=1; i<l.size(); i++){
           s = l.get(i);
-          if (urlValidator.isValid(s) && urlAccessible(s)) {
+          if (urlValidator.isValid(s)) {
 
             // waiting to know how to return both shorturl and object byte[] to later display it
             //Qr qrResponse = new Qr();
@@ -153,32 +154,6 @@ public class UrlShortenerController {
       }
   }
 
-  /**
-   *
-   * @param url String with the url to check if its accessible
-   * @return true if the url request gives code 200 in the header, otherwise returns false
-   */
-  private boolean urlAccessible(String url) {
-    try {
-      URL urlForGet = new URL(url);
-      HttpURLConnection connection;
-      connection = (HttpURLConnection) urlForGet.openConnection();
-      connection.setRequestMethod("GET");
-      int responseCode = connection.getResponseCode();
-
-      if (responseCode == HttpURLConnection.HTTP_OK) {
-        System.out.println("CODE 200");
-        return true;
-      } else {
-        System.out.print("Error Code:");
-        System.out.println(connection.getResponseCode());
-        return false;
-      }
-    } catch (IOException e) {
-      System.out.println("URL not accesible");
-      return false;
-    }
-  }
 
   //Return a Map with all the info in the header of the request
   private Map<String, String> getHeadersInfo(HttpServletRequest request) {
