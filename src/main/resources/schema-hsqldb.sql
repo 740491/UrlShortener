@@ -2,6 +2,7 @@
 
 DROP TABLE CLICK IF EXISTS;
 DROP TABLE SHORTURL IF EXISTS;
+DROP TABLE QRTABLE IF EXISTS;
 
 -- ShortURL
 
@@ -16,6 +17,14 @@ CREATE TABLE SHORTURL
     SAFE    BOOLEAN,                 -- Safe target
     IP      VARCHAR(20),             -- IP
     COUNTRY VARCHAR(50)              -- Country
+);
+
+-- QRTABLE
+
+CREATE TABLE QRTABLE
+(
+    HASH    VARCHAR(10) NOT NULL FOREIGN KEY REFERENCES SHORTURL (HASH), -- Key
+    QRBYTEARRAY varbinary(1024)
 );
 
 -- Click

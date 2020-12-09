@@ -4,13 +4,13 @@ package urlshortener.web;
 import com.google.zxing.WriterException;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
+import net.minidev.json.JSONObject;
 import org.apache.commons.validator.routines.UrlValidator;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.safebrowsing.Safebrowsing;
 import com.google.api.services.safebrowsing.model.*;
-import org.apache.logging.log4j.LogManager;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.ClickService;
+import urlshortener.service.QrService;
 import urlshortener.service.ShortURLService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,7 +28,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
@@ -45,11 +45,14 @@ public class UrlShortenerController {
 
   private final ShortURLService shortUrlService;
 
+  private final QrService qrService;
+
   private final ClickService clickService;
 
 
-  public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService) {
+  public UrlShortenerController(ShortURLService shortUrlService, QrService qrService, ClickService clickService) {
     this.shortUrlService = shortUrlService;
+    this.qrService = qrService;
     this.clickService = clickService;
   }
 
@@ -64,6 +67,8 @@ public class UrlShortenerController {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
   }
+
+  //hacer algo similar para qr
 
 //  @RequestMapping(value = "/link", method = RequestMethod.POST)
 //  public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
@@ -85,10 +90,11 @@ public class UrlShortenerController {
 //  }
 
   @RequestMapping(value = "/link", method = RequestMethod.POST)
-  public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
-                                               @RequestParam(value = "sponsor", required = false)
+  public ResponseEntity<JSONObject> shortener(@RequestParam("url") String url,
+                                              @RequestParam(value = "sponsor", required = false)
                                                     String sponsor,
-                                               HttpServletRequest request) throws IOException, WriterException {
+                                              @RequestParam(value = "qrCheck", required = false) Boolean qrCheck,
+                                              HttpServletRequest request) throws IOException, WriterException {
     UrlValidator urlValidator = new UrlValidator(new String[] {"http",
             "https"});
     if (urlValidator.isValid(url) && urlAccessible(url)) {
@@ -98,11 +104,29 @@ public class UrlShortenerController {
       //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), checkThreat(url));
       HttpHeaders h = new HttpHeaders();
+      JSONObject response = new JSONObject();
 
-      h.setLocation(su.getUri());
+      URI su_uri = su.getUri();
+
+      h.setLocation(su_uri);
       Map<String,String> headersInfo = getHeadersInfo(request);
       su.setRequestInfo(headersInfo.get("user-agent"));
-      return new ResponseEntity<>(su, h, HttpStatus.CREATED);
+
+      response.put("uri", su_uri.toString());
+      response.put("safe", su.getSafe());
+
+      String qrURL;
+
+      System.out.println("URL CONTROLLER qrCheck: " + qrCheck);
+
+      if(qrCheck != null && qrCheck){
+        qrURL = request.getScheme() + "://" + request.getServerName() + ":8080/qr/" + su.getHash();
+        //qrService.getQRCodeImage(su_uri.toString(),500,500);
+        response.put("qr", qrURL);
+        System.out.println("URL CONTROLLER qrUrl: " + qrURL);
+
+      }
+      return new ResponseEntity<>(response, h, HttpStatus.CREATED);
     } else {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }

@@ -10,6 +10,25 @@ $(document).ready(
                     data: $(this).serialize(),
                     success: function (msg) {
                         if (msg.safe) {
+                            console.log($("#qrCheck"))
+                            var checkedValue = document.getElementById("qrCheck").checked;
+                            console.info(msg)
+
+                            if(checkedValue === true){
+
+                                fetch(msg.qr).then(response => response.json())
+                                    .then(data =>{
+                                        console.log("JSON: " + data.qr)
+                                        $('.qr-code').attr('src', "data:image/jpg;base64, " + data.qr);
+                                        }
+
+                                    )
+                                //$("#imagen").html(
+                                    //"<img id=\"profileImage\" src=\"data:image/jpg;base64," + resultsQr.qr +"\">"
+                                //)
+
+
+                            }
                             $("#result").html(
                                 "<div class='alert alert-success lead'><a target='_blank' href='"
                                 + msg.uri
@@ -33,12 +52,12 @@ $(document).ready(
                         // Generate the link that would be
                         // used to generate the QR Code
                         // with the given data
-                        let finalURL = 'https://chart.googleapis.com/chart?cht=qr&chl=' + msg.uri +
-                            '&chs=160x160&chld=L|0'
+                        //let finalURL = 'https://chart.googleapis.com/chart?cht=qr&chl=' + msg.uri +
+                        //    '&chs=160x160&chld=L|0'
 
                         // Replace the src of the image with
                         // the QR code image
-                        $('.qr-code').attr('src', finalURL);
+                        //$('.qr-code').attr('src', finalURL);
 
                     },
                     error: function () {
