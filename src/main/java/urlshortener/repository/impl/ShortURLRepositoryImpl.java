@@ -44,7 +44,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
   @Override
   public ShortURL save(ShortURL su) {
     try {
-      jdbc.update("INSERT INTO shorturl VALUES (?,?,?,?,?,?,?,?,?)",
+      jdbc.update("INSERT INTO shorturl VALUES (?,?,?,?,?,?,?,?,?,?)",
           su.getHash(), su.getTarget(), su.getSponsor(),
           su.getCreated(), su.getOwner(), su.getMode(), su.getSafe(),
           su.getIP(), su.getCountry(), su.getAccessible());
@@ -52,6 +52,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
       log.debug("When insert for key {}", su.getHash(), e);
       return su;
     } catch (Exception e) {
+      System.out.println("abort!! save " + e);
       log.debug("When insert", e);
       return null;
     }
@@ -78,10 +79,11 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
   public void update(ShortURL su) {
     try {
       jdbc.update(
-          "update shorturl set target=?, sponsor=?, created=?, owner=?, mode=?, safe=?, ip=?, country=? where hash=?",
+          "update shorturl set target=?, sponsor=?, created=?, owner=?, mode=?, safe=?, ip=?, country=?," +
+                  "accessible=? where hash=?",
           su.getTarget(), su.getSponsor(), su.getCreated(),
           su.getOwner(), su.getMode(), su.getSafe(), su.getIP(),
-          su.getCountry(), su.getHash());
+          su.getCountry(), su.getAccessible(), su.getHash());
     } catch (Exception e) {
       log.debug("When update for hash {}", su.getHash(), e);
     }
