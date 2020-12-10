@@ -40,6 +40,7 @@ public class AccessibleURLService {
             HttpURLConnection connection;
             connection = (HttpURLConnection) urlForGet.openConnection();
             connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000); //set timeout to 5 seconds
             int responseCode = connection.getResponseCode();
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -50,6 +51,9 @@ public class AccessibleURLService {
                 System.out.println(connection.getResponseCode());
                 return false;
             }
+        } catch (java.net.SocketTimeoutException e) {
+            System.out.println("TIMEOUUUUTT");
+            return false;
         } catch (IOException e) {
             System.out.println("URL not accesible");
             return false;
