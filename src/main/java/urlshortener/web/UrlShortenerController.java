@@ -61,8 +61,12 @@ public class UrlShortenerController {
                                       HttpServletRequest request) {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
-      clickService.saveClick(id, extractIP(request));
-      return createSuccessfulRedirectToResponse(l);
+      if (l.getAccessible()) {
+        clickService.saveClick(id, extractIP(request));
+        return createSuccessfulRedirectToResponse(l);
+      } else {
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+      }
     } else {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
