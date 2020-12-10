@@ -26,7 +26,6 @@ public class AccessibleURLService {
     public void accessible(String hash, String target) {
         Boolean accessible = urlAccessible(target);
         shortURLRepository.updateAccessible(hash, accessible);
-        System.out.println("Accessibility object: " + shortURLRepository.findByKey(hash).getAccessible());
     }
 
     /**

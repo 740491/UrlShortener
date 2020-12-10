@@ -68,9 +68,7 @@ public class ShortURL {
     return sponsor;
   }
 
-  public Boolean getSafe() {
-    return safe;
-  }
+  public Boolean getSafe() { return safe; }
 
   public String getIP() {
     return ip;
