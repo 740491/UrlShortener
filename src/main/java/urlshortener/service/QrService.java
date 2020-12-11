@@ -8,6 +8,7 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import urlshortener.domain.Qr;
@@ -17,6 +18,8 @@ import urlshortener.web.UrlShortenerController;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -45,8 +48,8 @@ public class QrService {
     This method takes the text to be encoded, the width and height of the QR Code,
     and returns the QR Code in the form of a byte array.
     */
-    //@Async
-    public byte[] getQRCodeImageAndStore(String url, int width, int height) throws WriterException, IOException {
+    @Async
+    public Future<byte[]> getQRCodeImageAndStore(String url, int width, int height) throws WriterException, IOException {
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
         BitMatrix bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, width, height);
 
@@ -55,6 +58,6 @@ public class QrService {
         byte[] pngData = pngOutputStream.toByteArray();
         System.out.println("PNG DATA: " + pngData);
 
-        return pngData;
+        return new AsyncResult<>(pngData);
     }
 }

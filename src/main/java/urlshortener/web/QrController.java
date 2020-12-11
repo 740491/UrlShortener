@@ -17,6 +17,9 @@ import urlshortener.service.ShortURLService;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 @RestController
 public class QrController {
@@ -32,7 +35,7 @@ public class QrController {
 
     @GetMapping("/qr/{hash}")
     public ResponseEntity<JSONObject> qr(@PathVariable("hash") String hash,
-                                         HttpServletRequest request) throws IOException, WriterException {
+                                         HttpServletRequest request) throws IOException, WriterException, ExecutionException, InterruptedException {
 
         JSONObject response = new JSONObject();
         HttpHeaders h = new HttpHeaders();
@@ -41,20 +44,26 @@ public class QrController {
         h.setLocation(uri);
 
         Qr qr = qrService.findByKey(hash);
-        byte[] qrByteArray;
+        Future<byte[]> qrByteArray;
         System.out.println("QR CONTROLLER qr object: " + qr);
+        byte[] qrByteArrayLocal;
         if(qr != null) {
             System.out.println("Ya existia qr con hash: " + hash);
-            qrByteArray = qr.getQrByteArray();
+
+            qrByteArrayLocal = qr.getQrByteArray();
+            response.put("qr", qrByteArrayLocal);
         }
         else {
             qrByteArray = qrService.getQRCodeImageAndStore(uri.toString(),500,500);
-            System.out.println("RESPUESTA QRSERVICE: " + qrService.save(hash,qrByteArray));
+            qrByteArrayLocal = qrByteArray.get();
+            System.out.println("RESPUESTA QRSERVICE: " + qrService.save(hash,qrByteArrayLocal));
             System.out.println("NO existia qr con hash: " + hash);
 
             System.out.println("qr out controller: " + qrByteArray);
+
+            response.put("qr", qrByteArrayLocal);
         }
-        response.put("qr", qrByteArray);
+
 
 
 
