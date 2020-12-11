@@ -23,6 +23,7 @@ public class ShortURLBuilder {
   private Boolean safe;
   private String ip;
   private String country;
+  private Boolean accessible;
 
   static ShortURLBuilder newInstance() {
     return new ShortURLBuilder();
@@ -39,7 +40,8 @@ public class ShortURLBuilder {
         mode,
         safe,
         ip,
-        country
+        country,
+        accessible
     );
   }
 
@@ -87,6 +89,11 @@ public class ShortURLBuilder {
 
   ShortURLBuilder uri(Function<String, URI> extractor) {
     this.uri = extractor.apply(hash);
+    return this;
+  }
+
+  ShortURLBuilder accessible() {
+    this.accessible = false;
     return this;
   }
 }

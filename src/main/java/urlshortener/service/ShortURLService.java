@@ -33,6 +33,7 @@ public class ShortURLService {
         .temporaryRedirect()
         .ip(ip)
         .unknownCountry()
+        .accessible()
         .build();
     su.setSafe(safe);
     return shortURLRepository.save(su);
