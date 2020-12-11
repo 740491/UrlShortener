@@ -36,6 +36,8 @@ dependencies {
     compile 'com.github.kenglxn.QRGen:javase:2.6.0'
     //CSVReader Dependency
     compile 'com.opencsv:opencsv:4.1'
+    //Websockets
+    compile 'org.springframework.boot:spring-boot-starter-websocket:2.2.10.RELEASE'
 
 }
 
