@@ -1,7 +1,6 @@
 $(document).ready(
     function () {
         $("#shortener").submit(
-
             function (event) {
                 event.preventDefault();
                 $.ajax({
@@ -49,9 +48,82 @@ $(document).ready(
             });
 
         $("#csvFile").submit(
-
             function (event) {
                 event.preventDefault();
+                //Escalabilidad 15 puntos (WebSockets):
+
+                var number;
+                var socket = new SockJS('/csvfile');
+                var output = "";
+                stompClient = Stomp.over(socket);
+                stompClient.connect({}, function(frame) {
+                var reader = new FileReader();
+                var file = document.getElementById('file').files[0]
+                reader.readAsArrayBuffer(file);
+                reader.onloadend = function (evt) {
+                    // Get the Array Buffer
+                    var data = evt.target.result;
+                    var ui8a = new Uint8Array(data, 0);
+                    // Grab our byte length
+                    data = String.fromCharCode.apply(null,ui8a);
+                    number = data.split(/\r\n|\r|\n/).length;
+                    var rows = data.split('\n');
+                    console.log("DATA:");
+                    for(var i=0; i<number; i++){
+                        console.log(rows);
+                        stompClient.send("/app/csvfile", {},
+                                           JSON.stringify(rows[i]));
+                    }
+                 }
+                stompClient.subscribe('/csvmessages/messages', function(messageOutput) {
+                output += messageOutput.body;
+                number--;
+                if(number == 0){
+                    stompClient.disconnect();
+
+                    var blob = new Blob([output], { type: 'application/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // the filename you want
+                    a.download = 'shortenedURLs.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                }
+            });
+        });
+
+
+
+            /*
+                //Escalabilidad 10 puntos (XHR Streaming):
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/csvFile', false);
+                xhr.seenBytes = 0;
+                xhr.onreadystatechange = function() {
+                  if(xhr.readyState > 2) {
+                    var newData = xhr.responseText.substr(xhr.seenBytes);
+                    // process newData
+                    xhr.seenBytes = xhr.responseText.length;
+                    var blob = new Blob([newData], { type: 'application/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // the filename you want
+                    a.download = 'shortenedURLs.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                  }
+                };
+                xhr.send(new FormData(this));
+            */
+                /*
+                //Cumplimiento:
                 $.ajax({
                         url: "/csvFile",
                         type: "POST",
@@ -77,6 +149,7 @@ $(document).ready(
                             $("#result").html(
                             "<div class='alert alert-danger lead'>ERROR</div>");
                         }
-                    });
+                        */
+                    //});
             });
     });

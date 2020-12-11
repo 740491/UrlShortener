@@ -3,6 +3,7 @@ package urlshortener.web;
 
 import com.google.zxing.WriterException;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
 import org.apache.commons.validator.routines.UrlValidator;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -16,18 +17,25 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.ClickService;
 import urlshortener.service.ShortURLService;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
@@ -110,67 +118,74 @@ public class UrlShortenerController {
 
 
   @RequestMapping(value = "/csvFile", method = RequestMethod.POST, produces = "application/csv")
-  public ResponseEntity<InputStreamResource> csvFile(@RequestParam("file") MultipartFile file,
+  public void csvFile(@RequestParam("file") MultipartFile file,
                                           @RequestParam(value = "sponsor", required = false)
                                                     String sponsor, HttpServletRequest request) throws IOException {
+      //System.out.println("RemoteAddress:");
+      //0:0:0:0:0:0:0:1
+      //System.out.println(request.getRemoteAddr());
+      StringWriter sw = new StringWriter();
+      UrlValidator urlValidator = new UrlValidator(new String[] {"http",
+            "https"});
+      Reader reader = new InputStreamReader(file.getInputStream());
+      CSVReader csvReader = new CSVReaderBuilder(reader).withSkipLines(0).build();
 
-      String path = System.getProperty("user.dir") + "/src/main/resources/";
-
-      String name =  file.getOriginalFilename();
-      File f = new File(path + name);
-      try (OutputStream os = new FileOutputStream(f)) {
-        os.write(file.getBytes());
-      }
-
+      ShortURL su;
+      //Escalabilidad 10 puntos (XHR Streaming):
+      AsyncContext ctx = request.startAsync();
+      HttpServletResponse response = (HttpServletResponse) ctx.getResponse();
+      response.setStatus(HttpServletResponse.SC_OK);
+      response.setContentType(String.valueOf(MediaType.TEXT_PLAIN));
+      
       if(!file.isEmpty()){
-        CSVReader csvReader = new CSVReader(new FileReader(f));
         String[] rows = null;
-        List<String> l = new ArrayList<>(0);
         while((rows = csvReader.readNext()) != null) {
-          l.add(rows[0]);
+          sw.write(rows[0] + ", ");
+          response.getOutputStream().print((rows[0] + ", "));
+
+          if (urlValidator.isValid(rows[0]) && urlAccessible(rows[0])) {
+            su = shortUrlService.save(rows[0], sponsor, request.getRemoteAddr(), checkThreat(rows[0]));
+            sw.write(su.getUri().toString() + "\n");
+            response.getOutputStream().print((su.getUri().toString() + "\n"));
+          }else{
+            sw.write("Invalid URL" + "\n");
+            response.getOutputStream().print(("Invalid URL" + "\n"));
+          }
+          response.setContentLength(sw.toString().getBytes().length);
+          response.flushBuffer();
         }
+        ctx.complete();
         csvReader.close();
 
-        UrlValidator urlValidator = new UrlValidator(new String[] {"http",
-                "https"});
-
-        List<String> shortened = new ArrayList<>(0);
-        String s;
-        shortened.add(l.get(0));
-        for(int i=1; i<l.size(); i++){
-          s = l.get(i);
-          if (urlValidator.isValid(s) && urlAccessible(s)) {
-
-            // waiting to know how to return both shorturl and object byte[] to later display it
-            //Qr qrResponse = new Qr();
-            //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
-            ShortURL su = shortUrlService.save(s, sponsor, request.getRemoteAddr(), checkThreat(s));
-            shortened.add(su.getUri().toString().replace("\"",""));
-          }else{
-            shortened.add(("Invalid URL").replace("\"",""));
-          }
-        }
-
-        CSVWriter writer = new CSVWriter(new FileWriter(f.getPath()));
-        String[] output;
-        for (int i=1; i<l.size(); i++) {
-          output = new String[]{l.get(i), " " + shortened.get(i)};
-          writer.writeNext(output);
-        }
-
-        writer.close();
-
-
-        InputStreamResource resource = new InputStreamResource(new FileInputStream(f));
-        HttpHeaders h = new HttpHeaders();
-        h.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        h.setContentLength(f.length());
-
-        return new ResponseEntity<InputStreamResource>(resource, h, HttpStatus.OK);
-
-      }else{
-        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
       }
+  }
+
+
+  @MessageMapping("/csvfile")
+  @SendTo("/csvmessages/messages")
+  public String csvFileSend(String message, @RequestParam(value = "sponsor", required = false)
+                              String sponsor) throws Exception {
+      message = message.replace("\"","");
+      if(message.endsWith(",\\r")){
+        message = message.substring(0, message.length() - 2);
+      }
+      System.out.println("New message received:");
+      System.out.println(message);
+      StringWriter sw = new StringWriter();
+      UrlValidator urlValidator = new UrlValidator(new String[] {"http",
+              "https"});
+
+      ShortURL su;
+      sw.write(message + " ");
+      //Escalabilidad 15 puntos (WebSockets SockJs)
+      if (urlValidator.isValid(message.split(",")[0]) && urlAccessible(message.split(",")[0])) {
+        su = shortUrlService.save(message.split(",")[0], sponsor, "WebSocket", checkThreat(message.split(",")[0]));
+        sw.write("http://localhost:8080" + su.getUri().toString() + "\n");
+      }else{
+        sw.write("Invalid URL" + "\n");
+      }
+      System.out.println("Returns: "+ sw.toString());
+      return sw.toString();
   }
 
   //Returns true if the url request gives code 200 in the header, otherwise returns false
