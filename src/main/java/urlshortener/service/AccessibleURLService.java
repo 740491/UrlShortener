@@ -1,5 +1,6 @@
 package urlshortener.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -18,6 +19,7 @@ public class AccessibleURLService {
 
     private final ShortURLRepository shortURLRepository;
 
+    @Autowired
     public AccessibleURLService(ShortURLRepository shortURLRepository) {
         this.shortURLRepository = shortURLRepository;
     }

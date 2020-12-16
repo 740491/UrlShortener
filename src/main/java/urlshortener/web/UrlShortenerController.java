@@ -46,10 +46,13 @@ public class UrlShortenerController {
   @Autowired
   ThreatChecker threadChecker;
 
-  public UrlShortenerController(ShortURLService shortUrlService, QrService qrService, ClickService clickService) {
+  public UrlShortenerController(ShortURLService shortUrlService, QrService qrService, ClickService clickService,
+                                AccessibleURLService accessibleURLService, ThreatChecker threadChecker) {
     this.shortUrlService = shortUrlService;
     this.qrService = qrService;
     this.clickService = clickService;
+    this.accessibleURLService = accessibleURLService;
+    this.threadChecker = threadChecker;
   }
 
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
@@ -94,6 +97,7 @@ public class UrlShortenerController {
       Map<String,String> headersInfo = getHeadersInfo(request);
       su.setRequestInfo(headersInfo.get("user-agent"));
 
+      response.put("su", su);
       response.put("uri", su_uri.toString());
       response.put("safe", su.getSafe());
 

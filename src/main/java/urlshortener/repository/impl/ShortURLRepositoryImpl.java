@@ -85,6 +85,7 @@ public class ShortURLRepositoryImpl implements ShortURLRepository {
           su.getCountry(), su.getAccessible(), su.getHash());
     } catch (Exception e) {
       log.debug("When update for hash {}", su.getHash(), e);
+      e.printStackTrace();
     }
   }
 
