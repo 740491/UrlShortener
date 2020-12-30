@@ -17,6 +17,7 @@ CREATE TABLE SHORTURL
     IP          VARCHAR(20),             -- IP
     COUNTRY     VARCHAR(50),             -- Country
     ACCESSIBLE  BOOLEAN,                 -- Accesible URL
+    USER_AGENT  VARCHAR(1024),           -- User agent info
 );
 
 -- QRTABLE

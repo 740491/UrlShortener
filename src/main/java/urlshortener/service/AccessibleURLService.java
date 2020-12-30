@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
-import urlshortener.domain.ShortURL;
 import urlshortener.repository.ShortURLRepository;
 
 import java.io.IOException;
