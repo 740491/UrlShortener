@@ -94,7 +94,6 @@ public class UrlShortenerController {
       //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), false);
       accessibleURLService.accessible(su.getHash(), su.getTarget());
-      System.out.println("FUERA");
       threadChecker.checkThreat(su.getHash(), su.getTarget());
       HttpHeaders h = new HttpHeaders();
       JSONObject response = new JSONObject();

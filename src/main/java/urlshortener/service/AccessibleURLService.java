@@ -52,7 +52,7 @@ public class AccessibleURLService {
                 return false;
             }
         } catch (java.net.SocketTimeoutException e) {
-            System.out.println("TIMEOUUUUTT");
+            System.out.println("TIMEOUT");
             return false;
         } catch (IOException e) {
             System.out.println("URL not accesible");
