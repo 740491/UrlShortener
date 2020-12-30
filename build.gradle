@@ -39,6 +39,8 @@ dependencies {
     //Websockets
     compile 'org.springframework.boot:spring-boot-starter-websocket:2.2.10.RELEASE'
 
+    implementation 'com.google.code.gson:gson:2.8.6'
+
 }
 
 clean.doFirst {

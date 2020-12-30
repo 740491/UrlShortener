@@ -1,6 +1,8 @@
 package urlshortener.web;
 
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.zxing.WriterException;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
@@ -16,6 +18,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import urlshortener.domain.ShortURL;
+import urlshortener.domain.UserAgent;
 import urlshortener.service.*;
 
 import javax.servlet.AsyncContext;
@@ -26,6 +29,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.net.URI;
+import java.util.List;
 
 @RestController
 public class UrlShortenerController {
@@ -90,6 +94,7 @@ public class UrlShortenerController {
       //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), false);
       accessibleURLService.accessible(su.getHash(), su.getTarget());
+      System.out.println("FUERA");
       threadChecker.checkThreat(su.getHash(), su.getTarget());
       HttpHeaders h = new HttpHeaders();
       JSONObject response = new JSONObject();
@@ -199,9 +204,11 @@ public class UrlShortenerController {
 
 
 
-    @RequestMapping(value = "/userAgents", method = RequestMethod.GET)
-    public void userAgents() {
-        System.out.println("users-> " + userAgentService.getUserAgentInfo());
+    @RequestMapping(value = "/userAgents", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> userAgents() {
+        //Force new update
+        userAgentService.updateUserAgentInfo();
+        return new ResponseEntity<>(userAgentService.getUserAgentInfo(), HttpStatus.OK);
     }
 
   private String extractIP(HttpServletRequest request) {

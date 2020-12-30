@@ -25,7 +25,7 @@ public class AccessibleURLService {
 
     @Async
     public void accessible(String hash, String target) {
-        Boolean accessible = urlAccessible(target);
+        boolean accessible = urlAccessible(target);
         shortURLRepository.updateAccessible(hash, accessible);
     }
 
