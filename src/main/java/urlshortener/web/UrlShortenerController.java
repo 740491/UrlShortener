@@ -43,16 +43,19 @@ public class UrlShortenerController {
   @Autowired
   AccessibleURLService accessibleURLService;
 
+  //@Autowired
+  //ThreatChecker threadChecker;
+
   @Autowired
-  ThreatChecker threadChecker;
+  TaskQueueRabbitMQClientService taskQueueService;
 
   public UrlShortenerController(ShortURLService shortUrlService, QrService qrService, ClickService clickService,
-                                AccessibleURLService accessibleURLService, ThreatChecker threadChecker) {
+                                AccessibleURLService accessibleURLService) {
     this.shortUrlService = shortUrlService;
     this.qrService = qrService;
     this.clickService = clickService;
     this.accessibleURLService = accessibleURLService;
-    this.threadChecker = threadChecker;
+    //this.threadChecker = threadChecker;
   }
 
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
@@ -87,7 +90,10 @@ public class UrlShortenerController {
       //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), false);
       accessibleURLService.accessible(su.getHash(), su.getTarget());
-      threadChecker.checkThreat(su.getHash(), su.getTarget());
+      //threadChecker.checkThreat(su.getHash(), su.getTarget());
+
+      taskQueueService.send(su.getHash(), su.getTarget());
+
       HttpHeaders h = new HttpHeaders();
       JSONObject response = new JSONObject();
 
@@ -151,7 +157,8 @@ public class UrlShortenerController {
             sw.write(su.getUri().toString() + "\n");
             response.getOutputStream().print((su.getUri().toString() + "\n"));
             accessibleURLService.accessible(su.getHash(), su.getTarget());
-            threadChecker.checkThreat(su.getHash(), su.getTarget());
+            //threadChecker.checkThreat(su.getHash(), su.getTarget());
+
           }else{
             sw.write("Invalid URL" + "\n");
             response.getOutputStream().print(("Invalid URL" + "\n"));
@@ -187,7 +194,9 @@ public class UrlShortenerController {
         su = shortUrlService.save(message.split(",")[0], sponsor, "WebSocket", false);
         sw.write("http://localhost:8080" + su.getUri().toString() + "\n");
         accessibleURLService.accessible(su.getHash(), su.getTarget());
-        threadChecker.checkThreat(su.getHash(), su.getTarget());
+        //threadChecker.checkThreat(su.getHash(), su.getTarget());
+        taskQueueService.send(su.getHash(), su.getTarget());
+
       }else{
         sw.write("Invalid URL" + "\n");
       }

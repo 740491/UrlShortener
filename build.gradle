@@ -39,6 +39,9 @@ dependencies {
     //Websockets
     compile 'org.springframework.boot:spring-boot-starter-websocket:2.2.10.RELEASE'
 
+    //Spring AMQP Dependency
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
 }
 
 clean.doFirst {
