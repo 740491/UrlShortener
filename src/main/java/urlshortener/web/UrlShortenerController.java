@@ -1,6 +1,8 @@
 package urlshortener.web;
 
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.zxing.WriterException;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
@@ -16,6 +18,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import urlshortener.domain.ShortURL;
+import urlshortener.domain.UserAgent;
 import urlshortener.service.*;
 
 import javax.servlet.AsyncContext;
@@ -26,9 +29,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.net.URI;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @RestController
 public class UrlShortenerController {
@@ -49,13 +50,19 @@ public class UrlShortenerController {
   @Autowired
   TaskQueueRabbitMQClientService taskQueueService;
 
+  @Autowired
+  UserAgentService userAgentService;
+
   public UrlShortenerController(ShortURLService shortUrlService, QrService qrService, ClickService clickService,
-                                AccessibleURLService accessibleURLService) {
+                                AccessibleURLService accessibleURLService, UserAgentService userAgentService) {
+
     this.shortUrlService = shortUrlService;
     this.qrService = qrService;
     this.clickService = clickService;
     this.accessibleURLService = accessibleURLService;
+
     //this.threadChecker = threadChecker;
+    this.userAgentService = userAgentService;
   }
 
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
@@ -64,6 +71,7 @@ public class UrlShortenerController {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
       if (l.getAccessible() && l.getSafe()) {
+        userAgentService.extractUserAgent(request, id);
         clickService.saveClick(id, extractIP(request));
         return createSuccessfulRedirectToResponse(l);
       } else {
@@ -98,10 +106,8 @@ public class UrlShortenerController {
       JSONObject response = new JSONObject();
 
       URI su_uri = su.getUri();
-
       h.setLocation(su_uri);
-      Map<String,String> headersInfo = getHeadersInfo(request);
-      su.setRequestInfo(headersInfo.get("user-agent"));
+
 
       response.put("su", su);
       response.put("uri", su_uri.toString());
@@ -205,22 +211,14 @@ public class UrlShortenerController {
   }
 
 
-  //Return a Map with all the info in the header of the request
-  private Map<String, String> getHeadersInfo(HttpServletRequest request) {
 
-    Map<String, String> map = new HashMap<>();
 
-    Enumeration headerNames = request.getHeaderNames();
-    while (headerNames.hasMoreElements()) {
-      String key = (String) headerNames.nextElement();
-      String value = request.getHeader(key);
-      map.put(key, value);
+    @RequestMapping(value = "/userAgents", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> userAgents() {
+        //Force new update
+        userAgentService.updateUserAgentInfo();
+        return new ResponseEntity<>(userAgentService.getUserAgentInfo(), HttpStatus.OK);
     }
-
-    return map;
-  }
-
-
 
   private String extractIP(HttpServletRequest request) {
     return request.getRemoteAddr();
