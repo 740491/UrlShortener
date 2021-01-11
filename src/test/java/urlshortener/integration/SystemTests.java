@@ -4,8 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
 
@@ -76,8 +75,8 @@ public class SystemTests {
     postLink("http://example.com/");
     Thread.sleep(5500);
     ResponseEntity<String> entity = restTemplate.getForEntity("/f684a3c4", String.class);
-    assertThat(entity.getStatusCode(), is(HttpStatus.TEMPORARY_REDIRECT));
-    assertThat(entity.getHeaders().getLocation(), is(new URI("http://example.com/")));
+    assertThat(entity.getStatusCode(), is(HttpStatus.BAD_REQUEST));
+    assertNull(entity.getHeaders().getLocation());
   }
 
   private ResponseEntity<String> postLink(String url) {
