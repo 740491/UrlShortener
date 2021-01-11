@@ -3,6 +3,7 @@
 DROP TABLE SHORTURL IF EXISTS CASCADE;
 DROP TABLE QRTABLE IF EXISTS CASCADE;
 DROP TABLE CLICK IF EXISTS CASCADE;
+DROP TABLE USERAGENT IF EXISTS CASCADE;
 -- ShortURL
 
 CREATE TABLE SHORTURL
@@ -17,7 +18,6 @@ CREATE TABLE SHORTURL
     IP          VARCHAR(20),             -- IP
     COUNTRY     VARCHAR(50),             -- Country
     ACCESSIBLE  BOOLEAN,                 -- Accesible URL
-    USER_AGENT  VARCHAR(1024),           -- User agent info
 );
 
 -- QRTABLE
@@ -41,3 +41,11 @@ CREATE TABLE CLICK
     IP       VARCHAR(20),                                                 -- IP
     COUNTRY  VARCHAR(50)                                                  -- Country
 )
+
+--User agent info
+CREATE TABLE USERAGENT
+(
+    ID          BIGINT IDENTITY,                                             -- KEY
+    HASH        VARCHAR(10) NOT NULL FOREIGN KEY REFERENCES SHORTURL (HASH), -- Foreing Key
+    USERAGENT  VARCHAR(1024),                                               -- User agent info
+);

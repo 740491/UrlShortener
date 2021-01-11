@@ -74,7 +74,7 @@ public class SystemTests {
   @Test
   public void testRedirection() throws Exception {
     postLink("http://example.com/");
-    Thread.sleep(5100);
+    Thread.sleep(5500);
     ResponseEntity<String> entity = restTemplate.getForEntity("/f684a3c4", String.class);
     assertThat(entity.getStatusCode(), is(HttpStatus.TEMPORARY_REDIRECT));
     assertThat(entity.getHeaders().getLocation(), is(new URI("http://example.com/")));
