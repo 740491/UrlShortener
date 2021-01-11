@@ -1,8 +1,9 @@
 -- Clean database
 
-DROP TABLE CLICK IF EXISTS;
-DROP TABLE SHORTURL IF EXISTS;
-
+DROP TABLE SHORTURL IF EXISTS CASCADE;
+DROP TABLE QRTABLE IF EXISTS CASCADE;
+DROP TABLE CLICK IF EXISTS CASCADE;
+DROP TABLE USERAGENT IF EXISTS CASCADE;
 -- ShortURL
 
 CREATE TABLE SHORTURL
@@ -19,6 +20,14 @@ CREATE TABLE SHORTURL
     ACCESSIBLE  BOOLEAN,                 -- Accesible URL
 );
 
+-- QRTABLE
+
+CREATE TABLE QRTABLE
+(
+    HASH    VARCHAR(10) NOT NULL FOREIGN KEY REFERENCES SHORTURL (HASH), -- Key
+    QRBYTEARRAY varbinary(1024)
+);
+
 -- Click
 
 CREATE TABLE CLICK
@@ -32,3 +41,11 @@ CREATE TABLE CLICK
     IP       VARCHAR(20),                                                 -- IP
     COUNTRY  VARCHAR(50)                                                  -- Country
 )
+
+--User agent info
+CREATE TABLE USERAGENT
+(
+    ID          BIGINT IDENTITY,                                             -- KEY
+    HASH        VARCHAR(10) NOT NULL FOREIGN KEY REFERENCES SHORTURL (HASH), -- Foreing Key
+    USERAGENT  VARCHAR(1024),                                               -- User agent info
+);

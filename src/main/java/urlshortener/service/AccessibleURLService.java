@@ -1,10 +1,10 @@
 package urlshortener.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
-import urlshortener.domain.ShortURL;
 import urlshortener.repository.ShortURLRepository;
 
 import java.io.IOException;
@@ -18,13 +18,14 @@ public class AccessibleURLService {
 
     private final ShortURLRepository shortURLRepository;
 
+    @Autowired
     public AccessibleURLService(ShortURLRepository shortURLRepository) {
         this.shortURLRepository = shortURLRepository;
     }
 
     @Async
     public void accessible(String hash, String target) {
-        Boolean accessible = urlAccessible(target);
+        boolean accessible = urlAccessible(target);
         shortURLRepository.updateAccessible(hash, accessible);
     }
 
@@ -52,7 +53,7 @@ public class AccessibleURLService {
                 return false;
             }
         } catch (java.net.SocketTimeoutException e) {
-            System.out.println("TIMEOUUUUTT");
+            System.out.println("TIMEOUT");
             return false;
         } catch (IOException e) {
             System.out.println("URL not accesible");

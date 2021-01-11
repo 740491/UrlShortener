@@ -65,16 +65,16 @@ public class SystemTests {
         is(new URI("http://localhost:" + this.port + "/f684a3c4")));
     assertThat(entity.getHeaders().getContentType(), is(new MediaType("application", "json")));
     ReadContext rc = JsonPath.parse(entity.getBody());
-    assertThat(rc.read("$.hash"), is("f684a3c4"));
+    assertThat(rc.read("$.su.hash"), is("f684a3c4"));
     assertThat(rc.read("$.uri"), is("http://localhost:" + this.port + "/f684a3c4"));
-    assertThat(rc.read("$.target"), is("http://example.com/"));
-    assertThat(rc.read("$.sponsor"), is(nullValue()));
+    assertThat(rc.read("$.su.target"), is("http://example.com/"));
+    assertThat(rc.read("$.su.sponsor"), is(nullValue()));
   }
 
   @Test
   public void testRedirection() throws Exception {
     postLink("http://example.com/");
-
+    Thread.sleep(5100);
     ResponseEntity<String> entity = restTemplate.getForEntity("/f684a3c4", String.class);
     assertThat(entity.getStatusCode(), is(HttpStatus.TEMPORARY_REDIRECT));
     assertThat(entity.getHeaders().getLocation(), is(new URI("http://example.com/")));

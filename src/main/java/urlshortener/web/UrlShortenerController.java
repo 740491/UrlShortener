@@ -1,37 +1,33 @@
 package urlshortener.web;
 
-
 import com.google.zxing.WriterException;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import com.opencsv.CSVWriter;
+import net.minidev.json.JSONObject;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.WebSocketSession;
 import urlshortener.domain.ShortURL;
-import urlshortener.service.AccessibleURLService;
-import urlshortener.service.ClickService;
-import urlshortener.service.ShortURLService;
-import urlshortener.service.ThreatChecker;
+import urlshortener.domain.UserAgent;
+import urlshortener.service.*;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.websocket.Session;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.net.URI;
-import java.util.*;
+import java.util.List;
 
 @RestController
 public class UrlShortenerController {
@@ -39,17 +35,32 @@ public class UrlShortenerController {
 
   private final ShortURLService shortUrlService;
 
+  private final QrService qrService;
+
   private final ClickService clickService;
 
   @Autowired
   AccessibleURLService accessibleURLService;
 
-  @Autowired
-  ThreatChecker threadChecker;
+  //@Autowired
+  //ThreatChecker threadChecker;
 
-  public UrlShortenerController(ShortURLService shortUrlService, ClickService clickService) {
+  @Autowired
+  TaskQueueRabbitMQClientService taskQueueService;
+
+  @Autowired
+  UserAgentService userAgentService;
+
+  public UrlShortenerController(ShortURLService shortUrlService, QrService qrService, ClickService clickService,
+                                AccessibleURLService accessibleURLService, UserAgentService userAgentService) {
+
     this.shortUrlService = shortUrlService;
+    this.qrService = qrService;
     this.clickService = clickService;
+    this.accessibleURLService = accessibleURLService;
+
+    //this.threadChecker = threadChecker;
+    this.userAgentService = userAgentService;
   }
 
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
@@ -58,6 +69,7 @@ public class UrlShortenerController {
     ShortURL l = shortUrlService.findByKey(id);
     if (l != null) {
       if (l.getAccessible() && l.getSafe()) {
+        userAgentService.extractUserAgent(request, id);
         clickService.saveClick(id, extractIP(request));
         return createSuccessfulRedirectToResponse(l);
       } else {
@@ -68,22 +80,52 @@ public class UrlShortenerController {
     }
   }
 
+
   @RequestMapping(value = "/link", method = RequestMethod.POST)
-  public ResponseEntity<ShortURL> shortener(@RequestParam("url") String url,
-                                               @RequestParam(value = "sponsor", required = false)
+  public ResponseEntity<JSONObject> shortener(@RequestParam("url") String url,
+                                              @RequestParam(value = "sponsor", required = false)
                                                     String sponsor,
-                                               HttpServletRequest request) throws IOException, WriterException {
-    ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), false);
+                                              @RequestParam(value = "qrCheck", required = false) Boolean qrCheck,
+                                              HttpServletRequest request) throws IOException, WriterException {
+    UrlValidator urlValidator = new UrlValidator(new String[] {"http",
+            "https"});
+    //if (urlValidator.isValid(url)) {
 
-    accessibleURLService.accessible(su.getHash(), su.getTarget());
-    threadChecker.checkThreat(su.getHash(), su.getTarget());
+      // waiting to know how to return both shorturl and object byte[] to later display it
+      //Qr qrResponse = new Qr();
+      //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
+      ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), false);
+      accessibleURLService.accessible(su.getHash(), su.getTarget());
+      //threadChecker.checkThreat(su.getHash(), su.getTarget());
 
-    HttpHeaders h = new HttpHeaders();
+      taskQueueService.send(su.getHash(), su.getTarget());
 
-    h.setLocation(su.getUri());
-    Map<String,String> headersInfo = getHeadersInfo(request);
-    su.setRequestInfo(headersInfo.get("user-agent"));
-    return new ResponseEntity<>(su, h, HttpStatus.CREATED);
+      HttpHeaders h = new HttpHeaders();
+      JSONObject response = new JSONObject();
+
+      URI su_uri = su.getUri();
+      h.setLocation(su_uri);
+
+
+      response.put("su", su);
+      response.put("uri", su_uri.toString());
+      response.put("safe", su.getSafe());
+
+      String qrURL;
+
+      System.out.println("URL CONTROLLER qrCheck: " + qrCheck);
+
+      if(qrCheck != null && qrCheck){
+        qrURL = request.getScheme() + "://" + request.getServerName() + ":8080/qr/" + su.getHash();
+        //qrService.getQRCodeImage(su_uri.toString(),500,500);
+        response.put("qr", qrURL);
+        System.out.println("URL CONTROLLER qrUrl: " + qrURL);
+
+      }
+      return new ResponseEntity<>(response, h, HttpStatus.CREATED);
+    //} else {
+    //  return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+      //}
   }
 
 
@@ -119,7 +161,8 @@ public class UrlShortenerController {
             sw.write(su.getUri().toString() + "\n");
             response.getOutputStream().print((su.getUri().toString() + "\n"));
             accessibleURLService.accessible(su.getHash(), su.getTarget());
-            threadChecker.checkThreat(su.getHash(), su.getTarget());
+            //threadChecker.checkThreat(su.getHash(), su.getTarget());
+
           }else{
             sw.write("Invalid URL" + "\n");
             response.getOutputStream().print(("Invalid URL" + "\n"));
@@ -156,7 +199,9 @@ public class UrlShortenerController {
         su = shortUrlService.save(message.split(",")[0], sponsor, "WebSocket", false);
         sw.write("http://localhost:8080" + su.getUri().toString() + "\n");
         accessibleURLService.accessible(su.getHash(), su.getTarget());
-        threadChecker.checkThreat(su.getHash(), su.getTarget());
+        //threadChecker.checkThreat(su.getHash(), su.getTarget());
+        taskQueueService.send(su.getHash(), su.getTarget());
+
       }else{
         sw.write("Invalid URL" + "\n");
       }
@@ -165,22 +210,14 @@ public class UrlShortenerController {
   }
 
 
-  //Return a Map with all the info in the header of the request
-  private Map<String, String> getHeadersInfo(HttpServletRequest request) {
 
-    Map<String, String> map = new HashMap<>();
 
-    Enumeration headerNames = request.getHeaderNames();
-    while (headerNames.hasMoreElements()) {
-      String key = (String) headerNames.nextElement();
-      String value = request.getHeader(key);
-      map.put(key, value);
+    @RequestMapping(value = "/userAgents", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> userAgents() {
+        //Force new update
+        userAgentService.updateUserAgentInfo();
+        return new ResponseEntity<>(userAgentService.getUserAgentInfo(), HttpStatus.OK);
     }
-
-    return map;
-  }
-
-
 
   private String extractIP(HttpServletRequest request) {
     return request.getRemoteAddr();

@@ -41,6 +41,10 @@ dependencies {
     //OpenApi 3 + Swagger
     compile 'org.springdoc:springdoc-openapi-ui:1.5.2'
 
+    //Spring AMQP Dependency
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'com.google.code.gson:gson:2.8.6'
+
 }
 
 clean.doFirst {
