@@ -39,6 +39,7 @@ public class AccessibleURLService {
             HttpURLConnection connection;
             connection = (HttpURLConnection) urlForGet.openConnection();
             connection.setRequestMethod("GET");
+            connection.setReadTimeout(5000);
             connection.setConnectTimeout(5000); //set timeout to 5 seconds
             int responseCode = connection.getResponseCode();
 

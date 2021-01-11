@@ -17,6 +17,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.socket.WebSocketSession;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.AccessibleURLService;
 import urlshortener.service.ClickService;
@@ -27,6 +28,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.websocket.Session;
 import java.io.*;
 import java.net.URI;
 import java.util.*;
@@ -135,7 +137,8 @@ public class UrlShortenerController {
   @MessageMapping("/csvfile")
   @SendTo("/csvmessages/messages")
   public String csvFileSend(String message, @RequestParam(value = "sponsor", required = false)
-                              String sponsor) throws Exception {
+          String sponsor, WebSocketSession session) throws Exception {
+      System.out.println("Session: " + session.getRemoteAddress());
       message = message.replace("\"","");
       if(message.endsWith(",\\r")){
         message = message.substring(0, message.length() - 2);

@@ -38,6 +38,8 @@ dependencies {
     compile 'com.opencsv:opencsv:4.1'
     //Websockets
     compile 'org.springframework.boot:spring-boot-starter-websocket:2.2.10.RELEASE'
+    //OpenApi 3 + Swagger
+    compile 'org.springdoc:springdoc-openapi-ui:1.5.2'
 
 }
 
