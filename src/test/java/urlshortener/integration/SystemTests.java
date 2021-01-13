@@ -11,6 +11,8 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ReadContext;
 import java.net.URI;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +57,7 @@ public class SystemTests {
     assertThat(entity.getBody(), containsString("body"));
   }
 
+  @Ignore("Execute in local, as Travis doesn't test RabbitMQ")
   @Test
   public void testCreateLink() throws Exception {
     ResponseEntity<String> entity = postLink("http://example.com/");
@@ -70,6 +73,7 @@ public class SystemTests {
     assertThat(rc.read("$.su.sponsor"), is(nullValue()));
   }
 
+  @Ignore("Execute in local, as Travis doesn't test RabbitMQ")
   @Test
   public void testRedirection() throws Exception {
     postLink("http://example.com/");
