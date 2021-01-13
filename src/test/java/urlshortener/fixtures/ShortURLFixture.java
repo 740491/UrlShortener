@@ -2,6 +2,8 @@ package urlshortener.fixtures;
 
 import urlshortener.domain.ShortURL;
 
+import java.net.URI;
+
 public class ShortURLFixture {
 
   public static ShortURL url1() {
@@ -40,7 +42,17 @@ public class ShortURLFixture {
   }
 
   public static ShortURL someUrl() {
-    return new ShortURL("someKey", "http://example.com/", null, null, null,
+    return new ShortURL("someKey", "http://example.com/", URI.create("https://www.google.com/"), null, null,
         null, 307, true, null, null, true);
+  }
+
+  public static ShortURL urlNotSafe() {
+    return new ShortURL("notSafe", null, null, null, null, null, null, false,
+            null, null, true);
+  }
+
+  public static ShortURL urlNotAccessible() {
+    return new ShortURL("notSafe", null, null, null, null, null, null, true,
+            null, null, false);
   }
 }
