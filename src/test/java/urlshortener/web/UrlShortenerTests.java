@@ -95,46 +95,6 @@ public class UrlShortenerTests {
             .andExpect(status().isBadRequest());
   }
 
-  @Ignore("Dont know how it works")
-  @Test
-    public void thatShortenerCreatesARedirectIfTheURLisOK() throws Exception {
-    configureSave(null);
-
-    mockMvc.perform(post("/link").param("url", "http://example.com/"))
-        .andDo(print())
-        .andExpect(redirectedUrl("http://localhost/f684a3c4"))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.su.hash", is("f684a3c4")))
-        .andExpect(jsonPath("$.uri", is("http://localhost/f684a3c4")))
-        .andExpect(jsonPath("$.su.target", is("http://example.com/")))
-        .andExpect(jsonPath("$.su.sponsor", is(nullValue())));
-  }
-
-  @Ignore("Dont know if we should do tests with sponsors as we dont implement it")
-  @Test
-  public void thatShortenerCreatesARedirectWithSponsor() throws Exception {
-    configureSave("http://sponsor.com/");
-
-    mockMvc.perform(
-        post("/link").param("url", "http://example.com/").param(
-            "sponsor", "http://sponsor.com/").param(
-                "qrCheck", "false")).andDo(print())
-        .andExpect(redirectedUrl("http://localhost/f684a3c4"))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.su.hash", is("f684a3c4")))
-        .andExpect(jsonPath("$.uri", is("http://localhost/f684a3c4")))
-        .andExpect(jsonPath("$.su.target", is("http://example.com/")))
-        .andExpect(jsonPath("$.su.sponsor", is("http://sponsor.com/")));
-  }
-
-  //TODO: crea un enlace que no es seguro
-
-  //TODO: crea un enlace que no es accesible
-
-  //TODO: pruebas con el CSV
-
-
-
   @Test
   public void thatUserAgentsIsOk()
           throws Exception {
