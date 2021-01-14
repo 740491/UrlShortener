@@ -14,7 +14,7 @@ import urlshortener.service.TaskQueueRabbitMQClientService;
 @Configuration
 public class RabbitConfiguration {
 
-
+/*
     @Bean
     public Queue safetasksRequest() {
         return new Queue("safetasksRequest");
@@ -37,4 +37,6 @@ public class RabbitConfiguration {
 
     @Bean
     public RabbitMQSafeServerService server(){ return new RabbitMQSafeServerService();}
+
+ */
 }

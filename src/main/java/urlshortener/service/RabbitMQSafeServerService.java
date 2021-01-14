@@ -21,6 +21,7 @@ import java.util.List;
 
 @Service
 public class RabbitMQSafeServerService {
+    /*
     @Autowired
     private AmqpTemplate template;
 
@@ -100,4 +101,6 @@ public class RabbitMQSafeServerService {
 
         return findThreatMatchesRequest;
     }
+
+     */
 }
