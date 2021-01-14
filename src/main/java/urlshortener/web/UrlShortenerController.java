@@ -4,6 +4,12 @@ package urlshortener.web;
 import com.google.zxing.WriterException;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import net.minidev.json.JSONObject;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +68,15 @@ public class UrlShortenerController {
     this.userAgentService = userAgentService;
   }
 
+    @Operation(summary = "method redirectTo given a request")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "url.getMode", description = "Creates succesful redirection to hashed url"
+            ),
+            @ApiResponse(responseCode = "400", description = "BAD REQUEST"
+                    ),
+            @ApiResponse(responseCode = "404", description = "Not Found"
+            )
+    })
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
   public ResponseEntity<?> redirectTo(@PathVariable String id,
                                       HttpServletRequest request) {
@@ -79,7 +94,14 @@ public class UrlShortenerController {
     }
   }
 
+    @Operation(summary = "Creates a shortened url and returns a JSON")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "short url created",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(type = "object", example = "{su: ShortURL, uri: string , safe: Boolean, qr: string}")) })
+    }
 
+    )
   @RequestMapping(value = "/link", method = RequestMethod.POST)
   public ResponseEntity<JSONObject> shortener(@RequestParam("url") String url,
                                               @RequestParam(value = "sponsor", required = false)
@@ -128,6 +150,8 @@ public class UrlShortenerController {
   }
 
 
+    @Operation(summary = "Post method to submit a csv file")
+    @RequestBody(description = "file = .csv")
   @RequestMapping(value = "/csvFile", method = RequestMethod.POST, produces = "application/csv")
   public void csvFile(@RequestParam("file") MultipartFile file,
                                           @RequestParam(value = "sponsor", required = false)
@@ -210,7 +234,14 @@ public class UrlShortenerController {
 
 
 
+    @Operation(summary = "Get userAgents info")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "userAgents info obtained",
+                    content = { @Content(mediaType = "string",
+                            schema = @Schema(type = "string", example = "[{\"id\":0,\"hash\":\"cb5e0090\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36\"},{\"id\":1,\"hash\":\"587fe5c7\",\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36\"}]")) })
+    }
 
+    )
     @RequestMapping(value = "/userAgents", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> userAgents() {
         HttpHeaders h = new HttpHeaders();
