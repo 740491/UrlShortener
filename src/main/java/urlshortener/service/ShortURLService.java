@@ -9,6 +9,8 @@ import urlshortener.domain.ShortURL;
 import urlshortener.repository.ShortURLRepository;
 import urlshortener.web.UrlShortenerController;
 
+import java.util.List;
+
 @Service
 public class ShortURLService {
 
@@ -20,6 +22,10 @@ public class ShortURLService {
 
   public ShortURL findByKey(String id) {
     return shortURLRepository.findByKey(id);
+  }
+
+  public List<ShortURL> findByTarget(String target) {
+    return shortURLRepository.findByTarget(target);
   }
 
   public ShortURL save(String url, String sponsor, String ip, boolean safe) {

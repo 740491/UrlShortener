@@ -13,14 +13,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import net.minidev.json.JSONObject;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.*;
 
@@ -66,11 +64,11 @@ public class UrlShortenerController {
 
     @Operation(summary = "method redirectTo given a request")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "url.getMode", description = "Creates succesful redirection to hashed url"
+            @ApiResponse(responseCode = "307", description = "Creates succesful redirection to hashed url"
             ),
-            @ApiResponse(responseCode = "400", description = "BAD REQUEST"
+            @ApiResponse(responseCode = "400", description = "This URL is not accessible or This URL is not safe"
                     ),
-            @ApiResponse(responseCode = "404", description = "Not Found"
+            @ApiResponse(responseCode = "404", description = "This shorted url does not exist"
             )
     })
   @RequestMapping(value = "/{id:(?!link|index).*}", method = RequestMethod.GET)
@@ -102,6 +100,9 @@ public class UrlShortenerController {
 
     @Operation(summary = "Creates a shortened url and returns a JSON")
     @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "short url already exists",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(type = "object", example = "{su: ShortURL, uri: string , safe: Boolean, qr: string}")) }),
             @ApiResponse(responseCode = "201", description = "short url created",
                     content = { @Content(mediaType = "application/json",
                             schema = @Schema(type = "object", example = "{su: ShortURL, uri: string , safe: Boolean, qr: string}")) })
@@ -116,12 +117,17 @@ public class UrlShortenerController {
                                               HttpServletRequest request) {
     UrlValidator urlValidator = new UrlValidator(new String[] {"http",
             "https"});
-
+    HttpStatus estado = HttpStatus.OK;
+      if(shortUrlService.findByTarget(url).isEmpty()){
+          estado = HttpStatus.CREATED;
+      }
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), false);
       accessibleURLService.accessible(su.getHash(), su.getTarget());
       threadChecker.checkThreat(su.getHash(), su.getTarget());
 
+
       //taskQueueService.send(su.getHash(), su.getTarget());
+
 
       HttpHeaders h = new HttpHeaders();
       JSONObject response = new JSONObject();
@@ -135,25 +141,26 @@ public class UrlShortenerController {
       response.put("safe", su.getSafe());
 
       String qrURL;
+      qrURL = request.getScheme() + "://" + request.getServerName() + ":8080/qr/" + su.getHash();
 
       System.out.println("URL CONTROLLER qrCheck: " + qrCheck);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpEntity<String> responseQR =
+                restTemplate.getForEntity(qrURL,String.class,"");
+
 
       if(qrCheck != null && qrCheck){
-        qrURL = request.getScheme() + "://" + request.getServerName() + ":8080/qr/" + su.getHash();
+
         response.put("qr", qrURL);
         System.out.println("URL CONTROLLER qrUrl: " + qrURL);
 
       }
-      return new ResponseEntity<>(response, h, HttpStatus.CREATED);
+      return new ResponseEntity<>(response, h, estado);
 
-    //} else {
-    //  return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-      //}
   }
 
 
-  @Operation(summary = "Post method to submit a csv file")
-  @RequestBody(description = "file = .csv")
+
   @MessageMapping("/csvfile")
   @SendTo({"/csvmessages/messages"})
   public String csvFileSend(String message, @RequestParam(value = "sponsor", required = false)
