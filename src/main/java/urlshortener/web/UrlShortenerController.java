@@ -19,20 +19,16 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.socket.WebSocketSession;
 import urlshortener.domain.ShortURL;
 import urlshortener.service.*;
 
-import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.io.StringWriter;
 import java.net.URI;
+import java.util.Objects;
 
 @RestController
 public class UrlShortenerController {
@@ -47,11 +43,11 @@ public class UrlShortenerController {
   @Autowired
   AccessibleURLService accessibleURLService;
 
-  //@Autowired
-  //ThreatChecker threadChecker;
-
   @Autowired
-  TaskQueueRabbitMQClientService taskQueueService;
+  ThreatChecker threadChecker;
+
+  //@Autowired
+  //TaskQueueRabbitMQClientService taskQueueService;
 
   @Autowired
   UserAgentService userAgentService;
@@ -64,7 +60,7 @@ public class UrlShortenerController {
     this.clickService = clickService;
     this.accessibleURLService = accessibleURLService;
 
-    //this.threadChecker = threadChecker;
+    this.threadChecker = threadChecker;
     this.userAgentService = userAgentService;
   }
 
@@ -87,10 +83,20 @@ public class UrlShortenerController {
         clickService.saveClick(id, extractIP(request));
         return createSuccessfulRedirectToResponse(l);
       } else {
-        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+          JSONObject response = new JSONObject();
+          response.put("error code", HttpStatus.BAD_REQUEST);
+        if(!l.getAccessible()){
+            response.put("error", "This URL is not accessible");
+        }else{
+            response.put("error", "This URL is not safe");
+        }
+          return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
       }
     } else {
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        JSONObject response = new JSONObject();
+        response.put("error", "This shorted url does not exist");
+        response.put("error code", HttpStatus.NOT_FOUND);
+      return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
   }
 
@@ -107,19 +113,15 @@ public class UrlShortenerController {
                                               @RequestParam(value = "sponsor", required = false)
                                                     String sponsor,
                                               @RequestParam(value = "qrCheck", required = false) Boolean qrCheck,
-                                              HttpServletRequest request) throws IOException, WriterException {
+                                              HttpServletRequest request) {
     UrlValidator urlValidator = new UrlValidator(new String[] {"http",
             "https"});
-    //if (urlValidator.isValid(url)) {
 
-      // waiting to know how to return both shorturl and object byte[] to later display it
-      //Qr qrResponse = new Qr();
-      //byte[] imageByte= qrResponse.getQRCodeImage(String.valueOf(su.getUri()), 500, 500);
       ShortURL su = shortUrlService.save(url, sponsor, request.getRemoteAddr(), false);
       accessibleURLService.accessible(su.getHash(), su.getTarget());
-      //threadChecker.checkThreat(su.getHash(), su.getTarget());
+      threadChecker.checkThreat(su.getHash(), su.getTarget());
 
-      taskQueueService.send(su.getHash(), su.getTarget());
+      //taskQueueService.send(su.getHash(), su.getTarget());
 
       HttpHeaders h = new HttpHeaders();
       JSONObject response = new JSONObject();
@@ -138,73 +140,24 @@ public class UrlShortenerController {
 
       if(qrCheck != null && qrCheck){
         qrURL = request.getScheme() + "://" + request.getServerName() + ":8080/qr/" + su.getHash();
-        //qrService.getQRCodeImage(su_uri.toString(),500,500);
         response.put("qr", qrURL);
         System.out.println("URL CONTROLLER qrUrl: " + qrURL);
 
       }
       return new ResponseEntity<>(response, h, HttpStatus.CREATED);
+
     //} else {
     //  return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
       //}
   }
 
 
-    @Operation(summary = "Post method to submit a csv file")
-    @RequestBody(description = "file = .csv")
-  @RequestMapping(value = "/csvFile", method = RequestMethod.POST, produces = "application/csv")
-  public void csvFile(@RequestParam("file") MultipartFile file,
-                                          @RequestParam(value = "sponsor", required = false)
-                                                    String sponsor, HttpServletRequest request) throws IOException {
-      //System.out.println("RemoteAddress:");
-      //0:0:0:0:0:0:0:1
-      //System.out.println(request.getRemoteAddr());
-      StringWriter sw = new StringWriter();
-      UrlValidator urlValidator = new UrlValidator(new String[] {"http",
-            "https"});
-      Reader reader = new InputStreamReader(file.getInputStream());
-      CSVReader csvReader = new CSVReaderBuilder(reader).withSkipLines(0).build();
-
-      ShortURL su;
-      //Escalabilidad 10 puntos (XHR Streaming):
-      AsyncContext ctx = request.startAsync();
-      HttpServletResponse response = (HttpServletResponse) ctx.getResponse();
-      response.setStatus(HttpServletResponse.SC_OK);
-      response.setContentType(String.valueOf(MediaType.TEXT_PLAIN));
-
-      
-      if(!file.isEmpty()){
-        String[] rows = null;
-        while((rows = csvReader.readNext()) != null) {
-          sw.write(rows[0] + ", ");
-          response.getOutputStream().print((rows[0] + ", "));
-
-          if (urlValidator.isValid(rows[0])) {
-            su = shortUrlService.save(rows[0], sponsor, request.getRemoteAddr(), false);
-            sw.write(su.getUri().toString() + "\n");
-            response.getOutputStream().print((su.getUri().toString() + "\n"));
-            accessibleURLService.accessible(su.getHash(), su.getTarget());
-            //threadChecker.checkThreat(su.getHash(), su.getTarget());
-
-          }else{
-            sw.write("Invalid URL" + "\n");
-            response.getOutputStream().print(("Invalid URL" + "\n"));
-          }
-          response.setContentLength(sw.toString().getBytes().length);
-          response.flushBuffer();
-        }
-        ctx.complete();
-        csvReader.close();
-
-      }
-  }
-
-
+  @Operation(summary = "Post method to submit a csv file")
+  @RequestBody(description = "file = .csv")
   @MessageMapping("/csvfile")
-  @SendTo("/csvmessages/messages")
+  @SendTo({"/csvmessages/messages"})
   public String csvFileSend(String message, @RequestParam(value = "sponsor", required = false)
-          String sponsor, WebSocketSession session) throws Exception {
-      System.out.println("Session: " + session.getRemoteAddress());
+          String sponsor) {
       message = message.replace("\"","");
       if(message.endsWith(",\\r")){
         message = message.substring(0, message.length() - 2);
@@ -218,16 +171,13 @@ public class UrlShortenerController {
       ShortURL su;
       sw.write(message + " ");
       //Escalabilidad 15 puntos (WebSockets SockJs)
-      if (urlValidator.isValid(message.split(",")[0])) {
-        su = shortUrlService.save(message.split(",")[0], sponsor, "WebSocket", false);
-        sw.write("http://localhost:8080" + su.getUri().toString() + "\n");
-        accessibleURLService.accessible(su.getHash(), su.getTarget());
-        //threadChecker.checkThreat(su.getHash(), su.getTarget());
-        taskQueueService.send(su.getHash(), su.getTarget());
+      su = shortUrlService.save(message.split(",")[0], sponsor, "Websockets", false);
+      System.out.println(su);
+      sw.write("http://localhost:8080" + su.getUri().toString() + "\n");
+      accessibleURLService.accessible(su.getHash(), su.getTarget());
+      threadChecker.checkThreat(su.getHash(), su.getTarget());
+      //taskQueueService.send(su.getHash(), su.getTarget());
 
-      }else{
-        sw.write("Invalid URL" + "\n");
-      }
       System.out.println("Returns: "+ sw.toString());
       return sw.toString();
   }

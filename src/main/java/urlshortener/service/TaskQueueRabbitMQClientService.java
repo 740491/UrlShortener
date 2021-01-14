@@ -10,6 +10,7 @@ import urlshortener.repository.ShortURLRepository;
 
 @Service
 public class TaskQueueRabbitMQClientService {
+    /*
     @Autowired
     private AmqpTemplate template;
 
@@ -38,4 +39,5 @@ public class TaskQueueRabbitMQClientService {
         shortURLRepository.mark(shortURLRepository.findByKey(hash), value);
 
     }
+     */
 }

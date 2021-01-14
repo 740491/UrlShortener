@@ -1,4 +1,4 @@
-package urlshortener;
+package urlshortener.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
